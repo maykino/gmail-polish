@@ -1,8 +1,10 @@
 (() => {
   const COMPOSE_SELECTOR = 'div[role="textbox"][contenteditable="true"]';
   const RICH_TEXT_PREF_KEY = 'gmailPolishSkipRichTextWarning';
-  const POLISH_BUTTON_TEXT = '✨ Polish';
-  const POLISH_BUTTON_LOADING_TEXT = '⏳ Polishing...';
+  const POLISH_BUTTON_ICON = '✦';
+  const POLISH_BUTTON_LOADING_ICON = '↻';
+  const POLISH_BUTTON_LABEL = 'Polish';
+  const POLISH_BUTTON_LOADING_LABEL = 'Polishing…';
   const UNDO_DURATION_MS = 30000;
 
   const composeStates = new WeakMap();
@@ -105,7 +107,17 @@
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'gmail-polish-button';
-    button.textContent = POLISH_BUTTON_TEXT;
+
+    const icon = document.createElement('span');
+    icon.className = 'gmail-polish-icon';
+    icon.textContent = POLISH_BUTTON_ICON;
+
+    const label = document.createElement('span');
+    label.className = 'gmail-polish-label';
+    label.textContent = POLISH_BUTTON_LABEL;
+
+    button.appendChild(icon);
+    button.appendChild(label);
     button.addEventListener('click', () => {
       void polishComposeBody(body);
     });
@@ -511,8 +523,12 @@
 
     if (button) {
       button.disabled = isLoading;
-      button.textContent = isLoading ? POLISH_BUTTON_LOADING_TEXT : POLISH_BUTTON_TEXT;
       button.classList.toggle('gmail-polish-button-loading', isLoading);
+
+      const icon = button.querySelector('.gmail-polish-icon');
+      const label = button.querySelector('.gmail-polish-label');
+      if (icon) icon.textContent = isLoading ? POLISH_BUTTON_LOADING_ICON : POLISH_BUTTON_ICON;
+      if (label) label.textContent = isLoading ? POLISH_BUTTON_LOADING_LABEL : POLISH_BUTTON_LABEL;
     }
 
     body.classList.toggle('gmail-polish-processing', isLoading);
@@ -607,8 +623,10 @@
   const testApi = {
     COMPOSE_SELECTOR,
     RICH_TEXT_PREF_KEY,
-    POLISH_BUTTON_TEXT,
-    POLISH_BUTTON_LOADING_TEXT,
+    POLISH_BUTTON_ICON,
+    POLISH_BUTTON_LOADING_ICON,
+    POLISH_BUTTON_LABEL,
+    POLISH_BUTTON_LOADING_LABEL,
     UNDO_DURATION_MS,
     init,
     queueScan,

@@ -204,19 +204,32 @@ describe('content.js', () => {
 
     const state = content.ensureComposeState(body);
     const button = document.createElement('button');
+
+    const icon = document.createElement('span');
+    icon.className = 'gmail-polish-icon';
+    icon.textContent = content.POLISH_BUTTON_ICON;
+
+    const label = document.createElement('span');
+    label.className = 'gmail-polish-label';
+    label.textContent = content.POLISH_BUTTON_LABEL;
+
+    button.appendChild(icon);
+    button.appendChild(label);
     state.button = button;
 
     content.setLoadingState(body, true);
 
     expect(button.disabled).toBe(true);
-    expect(button.textContent).toBe(content.POLISH_BUTTON_LOADING_TEXT);
+    expect(icon.textContent).toBe(content.POLISH_BUTTON_LOADING_ICON);
+    expect(label.textContent).toBe(content.POLISH_BUTTON_LOADING_LABEL);
     expect(button.classList.contains('gmail-polish-button-loading')).toBe(true);
     expect(body.classList.contains('gmail-polish-processing')).toBe(true);
 
     content.setLoadingState(body, false);
 
     expect(button.disabled).toBe(false);
-    expect(button.textContent).toBe(content.POLISH_BUTTON_TEXT);
+    expect(icon.textContent).toBe(content.POLISH_BUTTON_ICON);
+    expect(label.textContent).toBe(content.POLISH_BUTTON_LABEL);
     expect(button.classList.contains('gmail-polish-button-loading')).toBe(false);
     expect(body.classList.contains('gmail-polish-processing')).toBe(false);
   });

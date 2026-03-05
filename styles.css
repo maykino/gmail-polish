@@ -1,28 +1,66 @@
+/* ── Polish Button ───────────────────────────────────── */
+
 .gmail-polish-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 36px;
-  padding: 0 14px;
+  padding: 0 16px;
   margin-left: 8px;
   border: none;
   border-radius: 18px;
-  background: #1a73e8;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
   color: #ffffff;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
   font-size: 13px;
   font-weight: 600;
+  letter-spacing: 0.2px;
   line-height: 36px;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(124, 58, 237, 0.3);
+  position: relative;
+  overflow: hidden;
 }
 
 .gmail-polish-button:hover {
-  background: #1557b0;
+  background: linear-gradient(135deg, #6d28d9, #5b21b6);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+  transform: translateY(-1px);
 }
 
+.gmail-polish-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(124, 58, 237, 0.3);
+}
+
+.gmail-polish-button .gmail-polish-icon {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Loading state */
 .gmail-polish-button.gmail-polish-button-loading,
 .gmail-polish-button:disabled {
-  background: #5f6368;
+  background: linear-gradient(135deg, #9ca3af, #6b7280);
+  box-shadow: none;
   pointer-events: none;
+  cursor: default;
+  transform: none;
 }
 
+.gmail-polish-button.gmail-polish-button-loading .gmail-polish-icon {
+  animation: gmail-polish-spin 1.2s linear infinite;
+}
+
+@keyframes gmail-polish-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Compose processing overlay */
 .gmail-polish-processing {
   opacity: 0.6 !important;
   pointer-events: none !important;
@@ -32,55 +70,101 @@
   position: relative;
 }
 
+/* ── Undo Bar ────────────────────────────────────────── */
+
 .gmail-polish-undo-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin: 8px 0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: #323232;
-  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+  color: #e0e7ff;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
   font-size: 13px;
+  box-shadow: 0 4px 12px rgba(30, 27, 75, 0.25);
+  animation: gmail-polish-slide-in 0.25s ease-out;
+}
+
+@keyframes gmail-polish-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.gmail-polish-undo-bar span {
+  flex: 1;
 }
 
 .gmail-polish-undo-button,
 .gmail-polish-undo-close {
   border: none;
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 5px 14px;
   cursor: pointer;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
   font-size: 12px;
   font-weight: 600;
+  transition: all 0.15s ease;
 }
 
 .gmail-polish-undo-button {
-  background: #1a73e8;
+  background: #7c3aed;
   color: #ffffff;
+  box-shadow: 0 1px 4px rgba(124, 58, 237, 0.3);
 }
 
 .gmail-polish-undo-button:hover {
-  background: #1557b0;
+  background: #6d28d9;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
 }
 
 .gmail-polish-undo-close {
-  background: #e8eaed;
-  color: #202124;
+  background: rgba(255, 255, 255, 0.12);
+  color: #c7d2fe;
 }
+
+.gmail-polish-undo-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* ── Toast ───────────────────────────────────────────── */
 
 .gmail-polish-toast {
   position: absolute;
   right: 12px;
   bottom: 12px;
   max-width: 320px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: #323232;
-  color: #ffffff;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+  color: #e0e7ff;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
   font-size: 13px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(30, 27, 75, 0.35);
   z-index: 9999;
+  animation: gmail-polish-toast-in 0.3s ease-out;
 }
+
+@keyframes gmail-polish-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ── Rich Text Warning ───────────────────────────────── */
 
 .gmail-polish-rich-warning {
   display: flex;
@@ -88,11 +172,18 @@
   justify-content: space-between;
   gap: 12px;
   margin: 8px 0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: #f1f3f4;
-  color: #202124;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border-left: 3px solid #7c3aed;
+  background: #f5f3ff;
+  color: #3b0764;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
   font-size: 12px;
+  animation: gmail-polish-slide-in 0.25s ease-out;
+}
+
+.gmail-polish-rich-warning-text {
+  flex: 1;
 }
 
 .gmail-polish-rich-warning-controls {
@@ -104,18 +195,28 @@
 
 .gmail-polish-rich-warning-controls label {
   white-space: nowrap;
+  color: #5b21b6;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.gmail-polish-rich-warning-controls input[type="checkbox"] {
+  accent-color: #7c3aed;
 }
 
 .gmail-polish-warning-dismiss {
   border: none;
   border-radius: 999px;
-  padding: 4px 10px;
-  background: #dadce0;
-  color: #202124;
+  padding: 4px 12px;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .gmail-polish-warning-dismiss:hover {
-  background: #c4c7c5;
+  background: #ddd6fe;
 }
