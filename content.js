@@ -444,7 +444,7 @@
     bar.appendChild(undoButton);
     bar.appendChild(closeButton);
 
-    composeRoot.insertBefore(bar, body);
+    body.before(bar);
     entry.barElement = bar;
   }
 
