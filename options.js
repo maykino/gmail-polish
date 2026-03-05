@@ -20,7 +20,20 @@ const saveButton = document.getElementById('save');
 const testButton = document.getElementById('test');
 const statusEl = document.getElementById('status');
 
-init();
+const hasRequiredElements = Boolean(
+  providerEl &&
+  apiUrlEl &&
+  apiKeyEl &&
+  modelEl &&
+  customInstructionsEl &&
+  saveButton &&
+  testButton &&
+  statusEl
+);
+
+if (hasRequiredElements) {
+  init();
+}
 
 function init() {
   providerEl.addEventListener('change', onProviderChange);
@@ -107,7 +120,7 @@ function collectSettings() {
     provider: providerEl.value,
     apiUrl: apiUrlEl.value.trim(),
     apiKey: apiKeyEl.value.trim(),
-    model: modelEl.value.trim() || DEFAULTS.model,
+    model: modelEl.value.trim(),
     customInstructions: customInstructionsEl.value.trim()
   };
 }
@@ -126,16 +139,45 @@ function sendMessage(message) {
 }
 
 function setButtonsDisabled(disabled) {
+  if (!saveButton || !testButton) {
+    return;
+  }
+
   saveButton.disabled = disabled;
   testButton.disabled = disabled;
 }
 
 function setStatus(message, kind) {
+  if (!statusEl) {
+    return;
+  }
+
   statusEl.textContent = message;
   statusEl.className = kind;
 }
 
 function clearStatus() {
+  if (!statusEl) {
+    return;
+  }
+
   statusEl.textContent = '';
   statusEl.className = '';
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    DEFAULTS,
+    PROVIDER_PRESETS,
+    init,
+    onProviderChange,
+    loadSettings,
+    onSave,
+    onTestConnection,
+    collectSettings,
+    sendMessage,
+    setButtonsDisabled,
+    setStatus,
+    clearStatus
+  };
 }

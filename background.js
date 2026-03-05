@@ -26,7 +26,7 @@ const SYSTEM_PROMPT = [
   '- Do not add a signature (it\'s handled separately)'
 ].join('\n');
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+function onRuntimeMessage(message, _sender, sendResponse) {
   if (!message || typeof message !== 'object') {
     return false;
   }
@@ -46,7 +46,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   return false;
-});
+}
+
+if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
+  chrome.runtime.onMessage.addListener(onRuntimeMessage);
+}
 
 async function readSettings(overrides = {}) {
   const stored = await chrome.storage.local.get(Object.keys(DEFAULT_SETTINGS));
@@ -190,4 +194,17 @@ async function callChatCompletions({ settings, messages, maxTokens = 2048, tempe
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    DEFAULT_SETTINGS,
+    PROVIDER_DEFAULTS,
+    SYSTEM_PROMPT,
+    onRuntimeMessage,
+    readSettings,
+    handlePolishRequest,
+    handleTestRequest,
+    callChatCompletions
+  };
 }

@@ -8,8 +8,11 @@
   const composeStates = new WeakMap();
   const undoEntries = new WeakMap();
   let scanQueued = false;
+  const root = typeof globalThis !== 'undefined' ? globalThis : window;
 
-  init();
+  if (!root.__GMAIL_POLISH_DISABLE_AUTO_INIT__) {
+    init();
+  }
 
   function init() {
     scanComposeBodies();
@@ -599,5 +602,47 @@
         resolve(result || {});
       });
     });
+  }
+
+  const testApi = {
+    COMPOSE_SELECTOR,
+    RICH_TEXT_PREF_KEY,
+    POLISH_BUTTON_TEXT,
+    POLISH_BUTTON_LOADING_TEXT,
+    UNDO_DURATION_MS,
+    init,
+    queueScan,
+    scanComposeBodies,
+    isComposeBody,
+    ensureComposeState,
+    ensurePolishButton,
+    findToolbarContainer,
+    findComposeRoot,
+    polishComposeBody,
+    containsRichFormatting,
+    maybeShowRichTextWarning,
+    extractDraftText,
+    stripPlainTextSignature,
+    replaceComposeText,
+    setUndoEntry,
+    showUndoBar,
+    onComposeKeydown,
+    isUndoShortcut,
+    restoreOriginalDraft,
+    clearUndoEntry,
+    setLoadingState,
+    showToast,
+    onGlobalShortcut,
+    getFocusedComposeBody,
+    sendRuntimeMessage,
+    getSettings,
+    __internal: {
+      composeStates,
+      undoEntries
+    }
+  };
+
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = testApi;
   }
 })();
