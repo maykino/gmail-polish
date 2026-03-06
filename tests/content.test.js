@@ -3,9 +3,17 @@ describe('content.js', () => {
     return require('../content.js');
   }
 
-  function createComposeDom({ html = 'Draft text', attrs = {} } = {}) {
+  function createComposeDom({ html = 'Draft text', attrs = {}, withSubject = false } = {}) {
     const root = document.createElement('div');
     root.setAttribute('role', 'dialog');
+
+    let subjectInput = null;
+    if (withSubject) {
+      subjectInput = document.createElement('input');
+      subjectInput.setAttribute('name', 'subjectbox');
+      subjectInput.value = 'Test Subject';
+      root.appendChild(subjectInput);
+    }
 
     const toolbar = document.createElement('div');
     toolbar.className = 'aDh';
@@ -25,7 +33,7 @@ describe('content.js', () => {
     root.appendChild(body);
     document.body.appendChild(root);
 
-    return { root, toolbar, body };
+    return { root, toolbar, body, subjectInput };
   }
 
   beforeEach(() => {
@@ -232,6 +240,34 @@ describe('content.js', () => {
     expect(label.textContent).toBe(content.POLISH_BUTTON_LABEL);
     expect(button.classList.contains('gmail-polish-button-loading')).toBe(false);
     expect(body.classList.contains('gmail-polish-processing')).toBe(false);
+  });
+
+  test('findSubjectInput locates the subject input in compose root', () => {
+    const content = loadContent();
+    const { body, subjectInput } = createComposeDom({ html: 'Draft', withSubject: true });
+
+    const found = content.findSubjectInput(body);
+    expect(found).toBe(subjectInput);
+
+    const { body: bodyNoSubject } = createComposeDom({ html: 'Draft' });
+    expect(content.findSubjectInput(bodyNoSubject)).toBeNull();
+  });
+
+  test('undo restores subject line when it was polished', () => {
+    jest.useFakeTimers();
+
+    const content = loadContent();
+    const { body, subjectInput } = createComposeDom({ html: '<p>Body</p>', withSubject: true });
+
+    content.setUndoEntry(body, '<p>Original body</p>', 'Original Subject', subjectInput);
+
+    subjectInput.value = 'Polished Subject';
+    body.innerHTML = '<p>Polished body</p>';
+
+    content.restoreOriginalDraft(body);
+
+    expect(body.innerHTML).toBe('<p>Original body</p>');
+    expect(subjectInput.value).toBe('Original Subject');
   });
 
   test('showToast renders and auto-dismisses after 5 seconds', () => {

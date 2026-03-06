@@ -21,9 +21,12 @@ const SYSTEM_PROMPT = [
   '- Preserve all names, addresses, numbers, dates, and specific details EXACTLY',
   '- Keep the email concise -- don\'t add unnecessary fluff',
   '- Maintain the original structure (greeting, body, sign-off)',
-  '- Return ONLY the polished email text, no explanations or commentary',
-  '- Do not add a subject line',
-  '- Do not add a signature (it\'s handled separately)'
+  '- Do not add a signature (it\'s handled separately)',
+  '',
+  'Response format:',
+  '- If a subject line is provided, return valid JSON: {"subject": "polished subject", "body": "polished email body"}',
+  '- If no subject line is provided, return ONLY the polished email text with no JSON wrapping',
+  '- Never include explanations or commentary outside the JSON or polished text'
 ].join('\n');
 
 function onRuntimeMessage(message, _sender, sendResponse) {
@@ -33,7 +36,7 @@ function onRuntimeMessage(message, _sender, sendResponse) {
 
   if (message.type === 'polishEmail') {
     handlePolishRequest(message)
-      .then((result) => sendResponse({ ok: true, polishedText: result }))
+      .then((result) => sendResponse({ ok: true, ...result }))
       .catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
@@ -78,22 +81,24 @@ async function handlePolishRequest(message) {
     throw new Error('Draft is empty.');
   }
 
+  const subject = (message?.subject || '').trim();
   const settings = await readSettings();
 
   if (settings.provider === 'openai' && !settings.apiKey.trim()) {
     throw new Error('API key is not configured.');
   }
 
+  const userParts = ['Polish this email draft while preserving meaning and details:'];
+
+  if (subject) {
+    userParts.push('', `Subject: ${subject}`);
+  }
+
+  userParts.push('', draftText);
+
   const messages = [
     { role: 'system', content: SYSTEM_PROMPT },
-    {
-      role: 'user',
-      content: [
-        'Polish this email draft while preserving meaning and details:',
-        '',
-        draftText
-      ].join('\n')
-    }
+    { role: 'user', content: userParts.join('\n') }
   ];
 
   const customInstructions = settings.customInstructions.trim();
@@ -104,10 +109,31 @@ async function handlePolishRequest(message) {
     });
   }
 
-  return callChatCompletions({
-    settings,
-    messages
-  });
+  const raw = await callChatCompletions({ settings, messages });
+
+  return parsePolishResponse(raw, subject);
+}
+
+function parsePolishResponse(raw, hasSubject) {
+  if (!hasSubject) {
+    return { polishedText: raw };
+  }
+
+  try {
+    const cleaned = raw.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
+    const parsed = JSON.parse(cleaned);
+
+    if (parsed && typeof parsed.body === 'string') {
+      return {
+        polishedText: parsed.body.trim(),
+        polishedSubject: typeof parsed.subject === 'string' ? parsed.subject.trim() : ''
+      };
+    }
+  } catch (_error) {
+    // AI didn't return JSON — treat entire response as body text
+  }
+
+  return { polishedText: raw };
 }
 
 async function handleTestRequest(message) {
@@ -209,6 +235,7 @@ if (typeof module !== 'undefined' && module.exports) {
     onRuntimeMessage,
     readSettings,
     handlePolishRequest,
+    parsePolishResponse,
     handleTestRequest,
     callChatCompletions
   };

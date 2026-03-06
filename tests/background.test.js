@@ -37,7 +37,7 @@ describe('background.js', () => {
     const background = loadBackground();
     const output = await background.handlePolishRequest({ draftText: 'hello world' });
 
-    expect(output).toBe('Polished response');
+    expect(output).toEqual({ polishedText: 'Polished response' });
     expect(global.fetch).toHaveBeenCalledTimes(1);
 
     const [, request] = global.fetch.mock.calls[0];
@@ -75,7 +75,8 @@ describe('background.js', () => {
         { type: 'polishEmail', draftText: 'original draft' },
         null,
         (response) => {
-          expect(response).toEqual({ ok: true, polishedText: 'Polished email' });
+          expect(response.ok).toBe(true);
+          expect(response.polishedText).toBe('Polished email');
           resolve();
         }
       );
@@ -183,5 +184,65 @@ describe('background.js', () => {
         messages: [{ role: 'user', content: 'Hello again' }]
       })
     ).rejects.toThrow('API returned an empty response.');
+  });
+
+  test('parsePolishResponse returns JSON subject+body when subject was provided', () => {
+    const background = loadBackground();
+
+    const jsonResponse = JSON.stringify({ subject: 'Better Subject', body: 'Better body text' });
+    const result = background.parsePolishResponse(jsonResponse, 'Original Subject');
+
+    expect(result.polishedText).toBe('Better body text');
+    expect(result.polishedSubject).toBe('Better Subject');
+  });
+
+  test('parsePolishResponse returns plain text when no subject was provided', () => {
+    const background = loadBackground();
+
+    const result = background.parsePolishResponse('Just polished text', '');
+
+    expect(result.polishedText).toBe('Just polished text');
+    expect(result.polishedSubject).toBeUndefined();
+  });
+
+  test('parsePolishResponse falls back to raw text when JSON parsing fails', () => {
+    const background = loadBackground();
+
+    const result = background.parsePolishResponse('Not valid JSON at all', 'Some subject');
+
+    expect(result.polishedText).toBe('Not valid JSON at all');
+    expect(result.polishedSubject).toBeUndefined();
+  });
+
+  test('handlePolishRequest includes subject in user message when provided', async () => {
+    chrome.__storageData.provider = 'openai';
+    chrome.__storageData.apiUrl = 'https://api.openai.com/v1/chat/completions';
+    chrome.__storageData.apiKey = 'sk-test';
+    chrome.__storageData.model = 'gpt-4.1';
+    chrome.__storageData.customInstructions = '';
+
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: jest.fn().mockResolvedValue(
+        JSON.stringify({
+          choices: [{ message: { content: '{"subject":"New Subject","body":"New body"}' } }]
+        })
+      )
+    });
+
+    const background = loadBackground();
+    const output = await background.handlePolishRequest({
+      draftText: 'hello',
+      subject: 'Old Subject'
+    });
+
+    expect(output.polishedText).toBe('New body');
+    expect(output.polishedSubject).toBe('New Subject');
+
+    const [, request] = global.fetch.mock.calls[0];
+    const parsed = JSON.parse(request.body);
+    const userMsg = parsed.messages.find((m) => m.role === 'user');
+    expect(userMsg.content).toContain('Subject: Old Subject');
   });
 });

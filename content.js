@@ -1,10 +1,10 @@
 (() => {
   const COMPOSE_SELECTOR = 'div[role="textbox"][contenteditable="true"]';
   const RICH_TEXT_PREF_KEY = 'gmailPolishSkipRichTextWarning';
-  const POLISH_BUTTON_ICON = '✦';
+  const POLISH_BUTTON_ICON = '⚡';
   const POLISH_BUTTON_LOADING_ICON = '↻';
-  const POLISH_BUTTON_LABEL = 'Polish';
-  const POLISH_BUTTON_LOADING_LABEL = 'Polishing…';
+  const POLISH_BUTTON_LABEL = 'Make it shine';
+  const POLISH_BUTTON_LOADING_LABEL = 'Shining…';
   const UNDO_DURATION_MS = 30000;
 
   const composeStates = new WeakMap();
@@ -180,6 +180,35 @@
     return body.closest('div[role="dialog"]') || body.parentElement;
   }
 
+  function findSubjectInput(body) {
+    const composeRoot = findComposeRoot(body);
+    if (!composeRoot) {
+      return null;
+    }
+
+    const input = composeRoot.querySelector('input[name="subjectbox"]');
+    if (input instanceof HTMLInputElement) {
+      return input;
+    }
+
+    return null;
+  }
+
+  function replaceSubjectText(input, text) {
+    const nativeSetter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype, 'value'
+    )?.set;
+
+    if (nativeSetter) {
+      nativeSetter.call(input, text);
+    } else {
+      input.value = text;
+    }
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
   async function polishComposeBody(body) {
     const state = composeStates.get(body);
     if (!state || state.isPolishing) {
@@ -208,14 +237,20 @@
       return;
     }
 
+    const subjectInput = findSubjectInput(body);
+    const subjectText = subjectInput ? subjectInput.value.trim() : '';
+
     setLoadingState(body, true);
     state.isPolishing = true;
 
     try {
       const originalHtml = body.innerHTML;
+      const originalSubject = subjectText;
+
       const response = await sendRuntimeMessage({
         type: 'polishEmail',
-        draftText
+        draftText,
+        subject: subjectText || undefined
       });
 
       if (!response?.ok) {
@@ -228,7 +263,13 @@
       }
 
       replaceComposeText(body, polishedText);
-      setUndoEntry(body, originalHtml);
+
+      const polishedSubject = (response.polishedSubject || '').trim();
+      if (polishedSubject && subjectInput) {
+        replaceSubjectText(subjectInput, polishedSubject);
+      }
+
+      setUndoEntry(body, originalHtml, originalSubject, subjectInput);
       showUndoBar(body);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to polish this draft.';
@@ -397,7 +438,7 @@
     body.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
-  function setUndoEntry(body, originalHtml) {
+  function setUndoEntry(body, originalHtml, originalSubject, subjectInput) {
     const existing = undoEntries.get(body);
     if (existing?.timerId) {
       clearTimeout(existing.timerId);
@@ -405,6 +446,8 @@
 
     const entry = {
       originalHtml,
+      originalSubject: originalSubject || null,
+      subjectInput: subjectInput || null,
       expiresAt: Date.now() + UNDO_DURATION_MS,
       dismissed: false,
       timerId: null,
@@ -458,6 +501,12 @@
 
     body.before(bar);
     entry.barElement = bar;
+
+    window.setTimeout(() => {
+      if (bar && document.contains(bar)) {
+        bar.remove();
+      }
+    }, 3000);
   }
 
   function onComposeKeydown(event, body) {
@@ -495,6 +544,10 @@
     body.innerHTML = entry.originalHtml;
     body.dispatchEvent(new Event('input', { bubbles: true }));
     body.dispatchEvent(new Event('change', { bubbles: true }));
+
+    if (entry.originalSubject !== null && entry.subjectInput) {
+      replaceSubjectText(entry.subjectInput, entry.originalSubject);
+    }
 
     clearUndoEntry(body, true);
   }
@@ -636,6 +689,8 @@
     ensurePolishButton,
     findToolbarContainer,
     findComposeRoot,
+    findSubjectInput,
+    replaceSubjectText,
     polishComposeBody,
     containsRichFormatting,
     maybeShowRichTextWarning,
