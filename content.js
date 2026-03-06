@@ -194,7 +194,7 @@
 
     if (provider === 'openai' && !apiKey) {
       showToast(body, 'Configure your API key in extension options first.');
-      chrome.runtime.openOptionsPage();
+      chrome.runtime.sendMessage({ type: 'openOptionsPage' });
       return;
     }
 

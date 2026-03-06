@@ -38,6 +38,11 @@ function onRuntimeMessage(message, _sender, sendResponse) {
     return true;
   }
 
+  if (message.type === 'openOptionsPage') {
+    chrome.runtime.openOptionsPage();
+    return false;
+  }
+
   if (message.type === 'testConnection') {
     handleTestRequest(message)
       .then((result) => sendResponse({ ok: true, message: result }))
