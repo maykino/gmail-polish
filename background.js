@@ -63,14 +63,11 @@ if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
   chrome.runtime.onMessage.addListener(onRuntimeMessage);
 }
 
-// Auto-seed API key from gitignored config.local.js on first install
+// Auto-seed API key from gitignored config.local.js on install/reload
 if (typeof chrome !== 'undefined' && chrome.runtime?.onInstalled) {
   chrome.runtime.onInstalled.addListener(async () => {
     if (typeof LOCAL_CONFIG !== 'undefined' && LOCAL_CONFIG.apiKey && LOCAL_CONFIG.apiKey !== 'YOUR_API_KEY_HERE') {
-      const existing = await chrome.storage.local.get(['apiKey']);
-      if (!existing.apiKey) {
-        await chrome.storage.local.set({ apiKey: LOCAL_CONFIG.apiKey });
-      }
+      await chrome.storage.local.set({ apiKey: LOCAL_CONFIG.apiKey });
     }
   });
 }
