@@ -109,7 +109,11 @@ async function handlePolishRequest(message) {
     });
   }
 
-  const raw = await callChatCompletions({ settings, messages });
+  const raw = await callChatCompletions({
+    settings,
+    messages,
+    responseFormat: subject ? { type: 'json_object' } : undefined
+  });
 
   return parsePolishResponse(raw, subject);
 }
@@ -119,18 +123,31 @@ function parsePolishResponse(raw, hasSubject) {
     return { polishedText: raw };
   }
 
-  try {
-    const cleaned = raw.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
-    const parsed = JSON.parse(cleaned);
+  // Try parsing the full response as JSON first
+  const candidates = [
+    raw.trim(),
+    raw.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim()
+  ];
 
-    if (parsed && typeof parsed.body === 'string') {
-      return {
-        polishedText: parsed.body.trim(),
-        polishedSubject: typeof parsed.subject === 'string' ? parsed.subject.trim() : ''
-      };
+  // Also try extracting a JSON object from anywhere in the response
+  const jsonMatch = raw.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    candidates.push(jsonMatch[0].trim());
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+
+      if (parsed && typeof parsed.body === 'string') {
+        return {
+          polishedText: parsed.body.trim(),
+          polishedSubject: typeof parsed.subject === 'string' ? parsed.subject.trim() : ''
+        };
+      }
+    } catch (_error) {
+      // Try next candidate
     }
-  } catch (_error) {
-    // AI didn't return JSON — treat entire response as body text
   }
 
   return { polishedText: raw };
@@ -162,7 +179,7 @@ async function handleTestRequest(message) {
   return 'Connection successful.';
 }
 
-async function callChatCompletions({ settings, messages, maxTokens = 2048, temperature = 0.3 }) {
+async function callChatCompletions({ settings, messages, maxTokens = 2048, temperature = 0.3, responseFormat } = {}) {
   const apiUrl = settings.apiUrl.trim();
   if (!apiUrl) {
     throw new Error('API URL is required.');
@@ -187,7 +204,8 @@ async function callChatCompletions({ settings, messages, maxTokens = 2048, tempe
         model: settings.model,
         messages,
         temperature,
-        max_tokens: maxTokens
+        max_tokens: maxTokens,
+        ...(responseFormat ? { response_format: responseFormat } : {})
       }),
       signal: controller.signal
     });

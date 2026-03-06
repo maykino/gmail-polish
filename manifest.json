@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gmail Polish",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "One-click email polishing with AI",
   "permissions": ["storage"],
   "host_permissions": [
