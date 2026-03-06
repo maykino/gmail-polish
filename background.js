@@ -1,3 +1,6 @@
+// Load gitignored config (API key) — safe to skip if file doesn't exist
+try { importScripts('config.local.js'); } catch (_e) { /* no local config */ }
+
 const DEFAULT_SETTINGS = {
   provider: 'openai',
   apiUrl: 'https://api.openai.com/v1/chat/completions',
@@ -58,6 +61,18 @@ function onRuntimeMessage(message, _sender, sendResponse) {
 
 if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
   chrome.runtime.onMessage.addListener(onRuntimeMessage);
+}
+
+// Auto-seed API key from gitignored config.local.js on first install
+if (typeof chrome !== 'undefined' && chrome.runtime?.onInstalled) {
+  chrome.runtime.onInstalled.addListener(async () => {
+    if (typeof LOCAL_CONFIG !== 'undefined' && LOCAL_CONFIG.apiKey && LOCAL_CONFIG.apiKey !== 'YOUR_API_KEY_HERE') {
+      const existing = await chrome.storage.local.get(['apiKey']);
+      if (!existing.apiKey) {
+        await chrome.storage.local.set({ apiKey: LOCAL_CONFIG.apiKey });
+      }
+    }
+  });
 }
 
 async function readSettings(overrides = {}) {
