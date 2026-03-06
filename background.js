@@ -1,6 +1,3 @@
-// Load gitignored config (API key) — safe to skip if file doesn't exist
-try { importScripts('config.local.js'); } catch (_e) { /* no local config */ }
-
 const DEFAULT_SETTINGS = {
   provider: 'openai',
   apiUrl: 'https://api.openai.com/v1/chat/completions',
@@ -63,18 +60,32 @@ if (typeof chrome !== 'undefined' && chrome.runtime?.onMessage) {
   chrome.runtime.onMessage.addListener(onRuntimeMessage);
 }
 
-// Auto-seed API key from gitignored config.local.js on install/reload
-if (typeof chrome !== 'undefined' && chrome.runtime?.onInstalled) {
-  chrome.runtime.onInstalled.addListener(async () => {
-    if (typeof LOCAL_CONFIG !== 'undefined' && LOCAL_CONFIG.apiKey && LOCAL_CONFIG.apiKey !== 'YOUR_API_KEY_HERE') {
-      await chrome.storage.local.set({ apiKey: LOCAL_CONFIG.apiKey });
-    }
-  });
+// Load API key from gitignored config.local.json (fetch-based, works in all browsers)
+async function loadLocalConfig() {
+  try {
+    const url = chrome.runtime.getURL('config.local.json');
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const config = await response.json();
+    return (config?.apiKey && config.apiKey !== 'YOUR_API_KEY_HERE') ? config : null;
+  } catch (_e) {
+    return null;
+  }
 }
 
 async function readSettings(overrides = {}) {
   const stored = await chrome.storage.local.get(Object.keys(DEFAULT_SETTINGS));
   const merged = { ...DEFAULT_SETTINGS, ...stored, ...overrides };
+
+  // Fallback to local config file if no key in storage
+  if (!merged.apiKey) {
+    const localConfig = await loadLocalConfig();
+    if (localConfig?.apiKey) {
+      merged.apiKey = localConfig.apiKey;
+      // Cache it in storage for future reads
+      chrome.storage.local.set({ apiKey: localConfig.apiKey });
+    }
+  }
 
   if (!merged.apiUrl) {
     merged.apiUrl = PROVIDER_DEFAULTS[merged.provider] || DEFAULT_SETTINGS.apiUrl;
@@ -261,6 +272,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     DEFAULT_SETTINGS,
     PROVIDER_DEFAULTS,
+    loadLocalConfig,
     SYSTEM_PROMPT,
     onRuntimeMessage,
     readSettings,

@@ -56,6 +56,7 @@ function createChromeMock(initialStorage = {}) {
       }
     }),
     openOptionsPage: jest.fn(),
+    getURL: jest.fn((path) => `chrome-extension://test-id/${path}`),
     onMessage: {
       addListener: jest.fn(),
       removeListener: jest.fn()
